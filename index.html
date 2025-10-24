@@ -1,0 +1,336 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Manara Directory — Community Add‑On</title>
+  <meta name="description" content="A simple, privacy‑aware Muslim professional directory (community add‑on for manara.directory)." />
+  <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+  <style>
+    :root{
+      /* Manara-like palette */
+      --bg:#f6f9fa;           /* page background (very light cool) */
+      --card:#ffffff;         /* cards */
+      --text:#0f172a;         /* primary text */
+      --muted:#64748b;        /* secondary text */
+      --line:#e6edf0;         /* dividers */
+      --primary:#0d9488;      /* teal-600 */
+      --primary-700:#0f766e;  /* teal-700 */
+      --accent:#14b8a6;       /* teal-500 for accents */
+      --chip:#f1f5f9;         /* pill bg */
+      --shadow:0 1px 1px rgba(0,0,0,.04),0 4px 12px rgba(0,0,0,.06);
+      --radius:16px;
+    }
+    *{box-sizing:border-box}
+    body{margin:0;background:var(--bg);color:var(--text);font:16px/1.45 system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,"Noto Sans",sans-serif}
+    header{position:sticky;top:0;background:rgba(255,255,255,.86);backdrop-filter:saturate(180%) blur(8px);border-bottom:1px solid var(--line);z-index:10}
+    .wrap{max-width:1120px;margin:auto;padding:14px 16px}
+    .row{display:flex;align-items:center;gap:12px}
+    .grow{flex:1}
+    .brand{display:flex;align-items:center;gap:12px}
+    .logo{width:36px;height:36px;background:var(--primary);border-radius:14px;box-shadow:var(--shadow)}
+    h1{font-size:18px;margin:0}
+    .sub{font-size:12px;color:var(--muted);margin:0}
+
+    .hero{background:linear-gradient(180deg,#e6fffb,transparent)}
+    h2{font-size:24px;margin:0}
+
+    .filters{display:grid;gap:10px;grid-template-columns:1fr;}
+    @media(min-width:760px){.filters{grid-template-columns: 1.25fr 1fr 1fr 1fr}}
+
+    input,select,button{height:44px;border:1px solid var(--line);border-radius:12px;padding:0 12px;background:#fff;color:inherit}
+    input::placeholder{color:#94a3b8}
+    button{background:var(--primary);border-color:transparent;color:#fff;cursor:pointer}
+    button:hover{background:var(--primary-700)}
+    .ghost{background:transparent;color:var(--text);border:1px solid var(--line)}
+
+    .bar{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:10px}
+    .small{font-size:12px;color:var(--muted)}
+    .check{display:inline-flex;align-items:center;gap:8px;font-size:14px;color:#334155}
+
+    main{padding:24px 16px}
+    .grid{display:grid;gap:16px}
+    @media(min-width:680px){.grid{grid-template-columns:repeat(2,1fr)}}
+    @media(min-width:980px){.grid{grid-template-columns:repeat(3,1fr)}}
+
+    .card{border:1px solid var(--line);border-radius:var(--radius);background:var(--card);box-shadow:var(--shadow);padding:16px}
+    .badge{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:999px;background:var(--primary);color:#fff;font-size:11px}
+    .badge.soft{background:#ecfdf5;color:#065f46;border:1px solid #a7f3d0}
+    .badge.warn{background:#fffbeb;color:#92400e;border:1px solid #fcd34d}
+    .muted{color:var(--muted)}
+    .chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+    .chip{background:var(--chip);border:1px solid var(--line);padding:6px 10px;border-radius:999px;font-size:12px}
+    .links{display:flex;flex-wrap:wrap;gap:12px;margin-top:12px}
+    .alink{font-size:14px;color:var(--primary);text-decoration:underline;text-underline-offset:4px}
+    .kv{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-top:14px}
+    .kv .box{border:1px solid var(--line);border-radius:12px;background:#f8fafc;padding:10px}
+    .kv .k{font-size:11px;text-transform:uppercase;color:#6b7280}
+    .kv .v{font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+    footer{border-top:1px solid var(--line);padding:24px 16px;color:var(--muted)}
+    .empty{border:1px dashed var(--line);border-radius:16px;background:#ecfdf5;color:#065f46;padding:24px;text-align:center}
+
+    [dir="rtl"] body{font-family:"Noto Naskh Arabic","Amiri",system-ui,sans-serif}
+  </style>
+  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+</head>
+<body>
+  <header>
+    <div class="wrap row">
+      <div class="brand">
+        <div class="logo" aria-hidden="true"></div>
+        <div>
+          <h1>Manara Directory</h1>
+          <p class="sub">Find trusted Muslim professionals</p>
+        </div>
+      </div>
+      <div class="grow"></div>
+      <div class="row">
+        <button class="ghost" id="btn-rtl" title="Toggle RTL/LTR">RTL</button>
+        <button class="ghost" id="btn-export" title="Export current results">Export filtered</button>
+        <label class="ghost row" style="padding:0 10px;cursor:pointer;">Load CSV
+          <input id="file" type="file" accept=".csv,text/csv" hidden />
+        </label>
+      </div>
+    </div>
+  </header>
+
+  <section class="hero">
+    <div class="wrap" style="padding:16px 16px 20px 16px;">
+      <div class="row" style="justify-content:space-between;align-items:flex-end;gap:12px">
+        <div>
+          <h2>Browse professionals <span id="count" style="color:var(--primary)">()</span></h2>
+        </div>
+        <div class="small" id="status"></div>
+      </div>
+
+      <div class="filters" style="margin-top:12px">
+        <input id="q" placeholder="Search name, title, city, category…" />
+        <select id="f-cat"><option value="">Category</option></select>
+        <select id="f-city"><option value="">City/Area</option></select>
+        <select id="f-lang"><option value="">Language</option></select>
+      </div>
+      <div class="bar">
+        <div class="row">
+          <label class="check"><input type="checkbox" id="only-accept"/> Accepting new clients</label>
+          <label class="check" style="opacity:.75"><input type="checkbox" id="admin"/> Admin: include hidden</label>
+        </div>
+        <div class="row">
+          <span class="small">Sort</span>
+          <select id="sort">
+            <option value="name">Name (A–Z)</option>
+            <option value="city">City</option>
+            <option value="cat">Category</option>
+          </select>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <main class="wrap">
+    <div id="empty" class="empty" style="display:none">No results. Try clearing filters or check Admin toggle.</div>
+    <div id="grid" class="grid"></div>
+  </main>
+
+  <footer>
+    <div class="wrap small">Built with ❤ for <strong style="color:var(--primary)">manara.directory</strong>. Colors/typography are easily adjustable in <code>:root</code>.</div>
+  </footer>
+
+<script>
+// === CONFIG ===
+// GitHub Pages: place your CSV at the repo root as *directory.csv* OR keep its original name below.
+const CSV_CANDIDATES = [
+  'directory.csv',
+  'DOC-20251011-WA0011.csv'
+];
+
+const COLS = {
+  listingType: 'Listing Type',
+  category: 'Primary Category',
+  title: 'Subcategory / Title',
+  name: 'Name',
+  contactPerson: 'Contact Person',
+  city: 'City / Area',
+  email: 'Public Email',
+  phone: 'Phone / WhatsApp',
+  website: 'Website',
+  social: 'Social Link',
+  blurb: 'Short Blurb',
+  languages: 'Languages',
+  accepting: 'Accepting New Clients?',
+  prefContact: 'Preferred Contact',
+  consent: 'Visibility Consent',
+  shareScope: 'Share Scope',
+  hours: 'Hours',
+  address: 'Address',
+  notes: 'Notes',
+};
+
+// === UTIL ===
+const $ = (sel)=>document.querySelector(sel);
+const el = (tag, cls)=>{ const n=document.createElement(tag); if(cls) n.className=cls; return n; };
+const uniq = (arr)=>Array.from(new Set(arr.filter(Boolean)));
+const tok = (v)=> (v||'').split(/[ ,;|]/).map(s=>s.trim()).filter(Boolean);
+const bool = (v)=> ['yes','y','true','✅'].includes(String(v||'').toLowerCase());
+const cleanPhone=(v)=>{ if(!v) return ''; const d=String(v).replace(/\D/g,''); return d.length>=7?`https://wa.me/${d}`:'' };
+const prettyURL=(u)=>{ if(!u) return ''; try{ const url=new URL(u.startsWith('http')?u:`https://${u}`); return url.hostname.replace('www.',''); }catch{ return u; } };
+
+let RAW=[];      // original rows
+let ROWS=[];     // normalized rows
+let FILTERED=[]; // current view
+
+function normalizeRow(r){
+  return {
+    ...r,
+    _accepting: bool(r[COLS.accepting]),
+    _consent: bool(r[COLS.consent]),
+    _languages: tok(r[COLS.languages])
+  };
+}
+
+async function tryLoadCSV(url){
+  return new Promise((resolve,reject)=>{
+    Papa.parse(url,{
+      download:true,header:true,skipEmptyLines:true,
+      complete:res=>resolve(res.data||[]),
+      error:err=>reject(err)
+    })
+  });
+}
+
+async function autoLoad(){
+  $('#status').textContent='Loading…';
+  for (const c of CSV_CANDIDATES){
+    try{
+      const rows = await tryLoadCSV(c);
+      if(rows && rows.length){ $('#status').textContent = `Loaded ${c}`; return rows; }
+    }catch(e){ /* keep trying */ }
+  }
+  $('#status').textContent='';
+  return [];
+}
+
+function hydrateOptions(){
+  const cats = uniq(ROWS.map(r=>r[COLS.category]||''));
+  const cities = uniq(ROWS.map(r=>r[COLS.city]||''));
+  const langs = uniq(ROWS.flatMap(r=>r._languages));
+  const fill=(sel,items)=>{ const s=$(sel); const v=s.value; s.innerHTML='<option value=""></option>'+items.map(i=>`<option>${i}</option>`).join(''); s.value=v; };
+  fill('#f-cat', cats);
+  fill('#f-city', cities);
+  fill('#f-lang', langs);
+}
+
+function applyFilters(){
+  const q = $('#q').value.trim().toLowerCase();
+  const cat = $('#f-cat').value; const city=$('#f-city').value; const lang=$('#f-lang').value;
+  const only = $('#only-accept').checked; const admin=$('#admin').checked;
+  const sort = $('#sort').value;
+
+  let out = ROWS.filter(r=> admin ? true : r._consent );
+
+  if(q){
+    out = out.filter(r => [COLS.name,COLS.title,COLS.blurb,COLS.city,COLS.category,COLS.contactPerson]
+      .map(k=>String(r[k]||'').toLowerCase()).some(s=>s.includes(q)));
+  }
+  if(cat) out = out.filter(r=> String(r[COLS.category]||'')===cat);
+  if(city) out = out.filter(r=> String(r[COLS.city]||'')===city);
+  if(lang) out = out.filter(r=> r._languages.includes(lang));
+  if(only) out = out.filter(r=> r._accepting);
+
+  out.sort((a,b)=>{
+    if(sort==='name') return String(a[COLS.name]||'').localeCompare(String(b[COLS.name]||''));
+    if(sort==='city') return String(a[COLS.city]||'').localeCompare(String(b[COLS.city]||''));
+    if(sort==='cat') return String(a[COLS.category]||'').localeCompare(String(b[COLS.category]||''));
+    return 0;
+  });
+
+  FILTERED = out;
+  $('#count').textContent = `(${FILTERED.length})`;
+  render();
+}
+
+function render(){
+  const grid = $('#grid');
+  grid.innerHTML = '';
+  if(!FILTERED.length){ $('#empty').style.display='block'; return; }
+  $('#empty').style.display='none';
+
+  for(const r of FILTERED){
+    const card = el('div','card');
+    const badges = el('div');
+    const b1 = el('span','badge'); b1.textContent = r[COLS.category] || r[COLS.listingType] || 'Listing'; badges.appendChild(b1);
+    if(r._accepting){ const b=el('span','badge soft'); b.textContent='Accepting clients'; badges.appendChild(b); }
+    if(!r._consent){ const b=el('span','badge warn'); b.textContent='Hidden (no consent)'; badges.appendChild(b); }
+    card.appendChild(badges);
+
+    const title = el('h3'); title.style.margin='8px 0 0'; title.style.fontSize='18px'; title.textContent = r[COLS.name]||'Unnamed Listing'; card.appendChild(title);
+    if(r[COLS.title]||r[COLS.contactPerson]){
+      const sub = el('div','muted'); sub.textContent = r[COLS.title] || r[COLS.contactPerson]; card.appendChild(sub);
+    }
+    if(r[COLS.blurb]){ const p=el('p'); p.style.margin='10px 0 0'; p.style.color='#334155'; p.textContent=r[COLS.blurb]; card.appendChild(p); }
+
+    const chips=el('div','chips');
+    if(r[COLS.city]){ const c=el('span','chip'); c.textContent=r[COLS.city]; chips.appendChild(c); }
+    for(const L of (r._languages||[]).slice(0,4)){ const c=el('span','chip'); c.textContent=L; chips.appendChild(c); }
+    card.appendChild(chips);
+
+    const links=el('div','links');
+    if(r[COLS.email]){ const a=el('a','alink'); a.href=`mailto:${r[COLS.email]}`; a.textContent='Email'; links.appendChild(a); }
+    const wa = cleanPhone(r[COLS.phone]); if(wa){ const a=el('a','alink'); a.href=wa; a.target='_blank'; a.rel='noreferrer'; a.textContent='WhatsApp'; links.appendChild(a); }
+    if(r[COLS.website]){ const a=el('a','alink'); const u=r[COLS.website]; a.href=u.startsWith('http')?u:`https://${u}`; a.target='_blank'; a.rel='noreferrer'; a.textContent=prettyURL(u); links.appendChild(a); }
+    if(r[COLS.social]){ const a=el('a','alink'); const s=r[COLS.social]; a.href=s.startsWith('http')?s:`https://${s}`; a.target='_blank'; a.rel='noreferrer'; a.textContent='Social'; links.appendChild(a); }
+    card.appendChild(links);
+
+    const kv=el('div','kv');
+    const push=(k,v)=>{ if(!v) return; const box=el('div','box'); const K=el('div','k');K.textContent=k; const V=el('div','v'); V.textContent=v; box.append(K,V); kv.appendChild(box); };
+    push('Preferred', r[COLS.prefContact]);
+    push('Address', r[COLS.address]);
+    push('Hours', r[COLS.hours]);
+    push('Notes', r[COLS.notes]);
+    card.appendChild(kv);
+
+    grid.appendChild(card);
+  }
+}
+
+function bindUI(){
+  ['#q','#f-cat','#f-city','#f-lang','#only-accept','#admin','#sort'].forEach(id=>{
+    $(id).addEventListener('input', applyFilters);
+    $(id).addEventListener('change', applyFilters);
+  });
+  $('#btn-rtl').addEventListener('click',()=>{
+    const root = document.documentElement;
+    const now = root.getAttribute('dir')==='rtl'?'ltr':'rtl';
+    root.setAttribute('dir', now);
+    $('#btn-rtl').textContent = now==='rtl'?'LTR':'RTL';
+  });
+  $('#file').addEventListener('change', (e)=>{
+    const file = e.target.files?.[0]; if(!file) return;
+    Papa.parse(file,{header:true,skipEmptyLines:true,complete:(res)=>{
+      RAW = res.data||[]; ROWS = RAW.map(normalizeRow); hydrateOptions(); FILTERED=ROWS; applyFilters();
+      $('#status').textContent=`Loaded ${file.name}`;
+    }});
+  });
+  $('#btn-export').addEventListener('click', ()=>{
+    if(!FILTERED.length) return;
+    const csv = Papa.unparse(FILTERED);
+    const blob = new Blob([csv],{type:'text/csv;charset=utf-8;'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a'); a.href=url; a.download='manara-directory-filtered.csv'; a.click(); URL.revokeObjectURL(url);
+  });
+}
+
+async function boot(){
+  bindUI();
+  const preload = await autoLoad();
+  if(preload.length){
+    RAW = preload; ROWS = RAW.map(normalizeRow); hydrateOptions(); FILTERED=ROWS; applyFilters();
+  } else {
+    $('#status').textContent = 'Upload a CSV to begin';
+  }
+}
+
+boot();
+</script>
+</body>
+</html>
